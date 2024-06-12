@@ -3,6 +3,12 @@ uuid = "4df5d85a-9921-4468-8597-6040ccd6f267"
 authors = ["lanceXwq <lance.xwq@gmail.com> and contributors"]
 version = "0.1.0-DEV"
 
+[deps]
+ColorSchemes = "35d6a980-a343-548e-a6ea-1d62b119f2f4"
+Combinatorics = "861a8166-3701-5b0c-9a16-15d98fcdc6aa"
+GLMakie = "e9467ef8-e4e7-5192-8a1a-b1aee30e663a"
+SP2T = "34fb1bd2-35c9-4575-83d4-13ca8a095b37"
+
 [compat]
 julia = "1.6.7"
 
