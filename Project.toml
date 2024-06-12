@@ -1,7 +1,7 @@
 name = "SP2TVis"
 uuid = "4df5d85a-9921-4468-8597-6040ccd6f267"
 authors = ["lanceXwq <lance.xwq@gmail.com> and contributors"]
-version = "1.0.0-DEV"
+version = "0.1.0-DEV"
 
 [compat]
 julia = "1.6.7"
