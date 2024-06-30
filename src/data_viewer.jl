@@ -85,7 +85,7 @@ function viewframes(
     end
 
     sl_tags = (@lift "($($(w_sl.interval)[1]), $($(h_sl.interval)[1]))"),
-    (@lift "($($(w_sl.interval)[2]), $($(h_sl.interval)[2]))")
+    (@lift "($($(w_sl.interval)[2]-$(w_sl.interval)[1]+1), $($(h_sl.interval)[2]-$(h_sl.interval)[1]+1))")
     rangetag =
         @lift "Frame range: $(min($lowerindex,$upperindex))-$(max($lowerindex,$upperindex))"
 
