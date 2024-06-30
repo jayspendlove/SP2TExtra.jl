@@ -31,11 +31,12 @@ getvertices(rect) = (@lift $(rect).origin), (@lift $(rect).origin .+ $(rect).wid
 
 function viewframes(
     frames::AbstractArray{<:Integer,3};
-    batchsize::Integer,
+    batchsize::Union{Integer,Nothing}=nothing,
     tracks::Union{Nothing,AbstractArray}=nothing,
     pxsize::Real=1,
 )
-    framewidth, frameheight, framecount = size(frames)
+    width, height, nframes = size(frames)
+    isnothing(batchsize) && (batchsize = maximum(frames))
     isnothing(tracks) && (tracks = fill(NaN, (3, 1, size(frames, 3))))
 
     set_theme!(theme_dataviewer)
@@ -44,11 +45,11 @@ function viewframes(
 
     h_sl = IntervalSlider(
         fig[1, 2],
-        range=1:frameheight,
-        startvalues=(1, frameheight),
+        range=1:height,
+        startvalues=(1, height),
         horizontal=false,
     )
-    w_sl = IntervalSlider(fig[2, 1], range=1:framewidth, startvalues=(1, framewidth))
+    w_sl = IntervalSlider(fig[2, 1], range=1:width, startvalues=(1, width))
     tb = Textbox(
         fig[2, 3][1, 2],
         halign=:right,
@@ -60,10 +61,10 @@ function viewframes(
         fig[3, :][1, 1],
         (
             label="Frame",
-            range=1:framecount,
+            range=1:nframes,
             startvalue=1,
             snap=false,
-            format=x -> "$x/$framecount",
+            format=x -> "$x/$nframes",
         ),
         (
             label="Contrast",
@@ -76,12 +77,12 @@ function viewframes(
     button = Button(fig[3, :][1, 2], label="print")
 
     lowerindex = Observable(1)
-    upperindex = Observable(framecount)
+    upperindex = Observable(nframes)
 
     on(tb.stored_string) do str
         interval = sort!(parse.(Int64, split(str, ',')))
-        lowerindex[] = 1 <= interval[1] <= framecount ? interval[1] : lowerindex[]
-        upperindex[] = 1 <= interval[2] <= framecount ? interval[2] : upperindex[]
+        lowerindex[] = 1 <= interval[1] <= nframes ? interval[1] : lowerindex[]
+        upperindex[] = 1 <= interval[2] <= nframes ? interval[2] : upperindex[]
     end
 
     sl_tags = (@lift "($($(w_sl.interval)[1]), $($(h_sl.interval)[1]))"),
@@ -118,29 +119,29 @@ function viewframes(
 
     heatmap!(
         axes[1],
-        1:framewidth,
-        1:frameheight,
+        1:width,
+        1:height,
         mainframe,
         colormap=:bone,
         colorrange=colorrange,
     )
     heatmap!(
         axes[2],
-        1:framewidth,
-        1:frameheight,
+        1:width,
+        1:height,
         startframe,
         colormap=:bone,
         colorrange=colorrange,
     )
     heatmap!(
         axes[3],
-        1:framewidth,
-        1:frameheight,
+        1:width,
+        1:height,
         endframe,
         colormap=:bone,
         colorrange=colorrange,
     )
-    limits!.(axes, 0.5, framewidth + 0.5, 0.5, frameheight + 0.5)
+    limits!.(axes, 0.5, width + 0.5, 0.5, height + 0.5)
 
     foreach(x -> lines!(axes[1], x), trajs2Dobs)
 
@@ -163,7 +164,7 @@ function viewframes(
 
     colsize!(fig.layout, 1, Relative(2 / 3))
     colsize!(fig.layout, 3, Relative(1 / 3))
-    rowsize!(fig.layout, 1, Aspect(1, frameheight / framewidth))
+    rowsize!(fig.layout, 1, Aspect(1, height / width))
     resize_to_layout!(fig)
     display(fig)
     set_theme!()
