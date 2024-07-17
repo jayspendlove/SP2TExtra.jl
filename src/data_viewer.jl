@@ -37,7 +37,7 @@ function viewframes(
 )
     width, height, nframes = size(frames)
     isnothing(batchsize) && (batchsize = maximum(frames))
-    isnothing(tracks) && (tracks = fill(NaN, (3, 1, size(frames, 3))))
+    isnothing(tracks) && (tracks = fill(NaN, (size(frames, 3), 3, 1)))
 
     set_theme!(theme_dataviewer)
     fig = Figure(; size=(1000, 300))
@@ -99,8 +99,8 @@ function viewframes(
     # trange = @lift 1:$(slgrid.sliders[1].value)
     tracks2 = tracks ./ pxsize
     trajs2D = []
-    for x in eachslice(view(tracks2, 1:2, :, :), dims=2)
-        push!(trajs2D, Point2f[eachslice(x, dims=2)...])
+    for x in eachslice(view(tracks2, :, 1:2, :), dims=3)
+        push!(trajs2D, Point2f[eachslice(x, dims=1)...])
     end
     # @show typeof(trajs2D[1])
     trajs2Dobs = []
