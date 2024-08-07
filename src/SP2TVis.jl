@@ -1,6 +1,6 @@
 module SP2TVis
 
-using GLMakie, SP2T, ColorSchemes, Combinatorics
+using GLMakie, SP2T, ColorSchemes, Combinatorics, StatsBase
 # Write your package code here.
 
 export readbin, getframes, extractROI
