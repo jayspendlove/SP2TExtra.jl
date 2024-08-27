@@ -96,20 +96,13 @@ function viewframes(
     startframe = @lift view(frames, :, :, $lowerindex)
     endframe = @lift view(frames, :, :, $upperindex)
 
-    # trange = @lift 1:$(slgrid.sliders[1].value)
     tracks2 = tracks ./ pxsize
     trajs2D = []
     for x in eachslice(view(tracks2, :, 1:2, :), dims=3)
         push!(trajs2D, Point2f[eachslice(x, dims=1)...])
     end
-    # @show typeof(trajs2D[1])
     trajs2Dobs = []
     foreach(x -> push!(trajs2Dobs, @lift view(x, 1:$(slgrid.sliders[1].value))), trajs2D)
-
-    # eachrow(trajs2D)
-    #     @show typeof(x)
-    #     push!(trajs2Dobs, @lift view(x, 1:$(slgrid.sliders[1].value)))
-    # end
 
     on(button.clicks) do n
         println(
@@ -144,10 +137,6 @@ function viewframes(
     limits!.(axes, 0.5, width + 0.5, 0.5, height + 0.5)
 
     foreach(x -> lines!(axes[1], x), trajs2Dobs)
-
-    # for m in eachrow(trajs2Dobs)
-    #     lines!(axes[1], m)
-    # end
 
     rect = getrect(w_sl, h_sl)
     for ax in axes

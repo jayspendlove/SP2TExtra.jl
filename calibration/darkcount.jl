@@ -4,10 +4,10 @@ using JLD2
 using GLMakie
 using ColorSchemes
 
-function get_darkcounts(frames)
-    darkcounts = Array{Float64}(undef, size(frames, 1), size(frames, 2))
-    sum!(darkcounts, frames)
-    N = size(frames, 3)
+function get_darkcounts(darkframes::AbstractArray{<:Integer,3})
+    darkcounts = Array{Float64}(undef, size(darkframes, 1), size(darkframes, 2))
+    sum!(darkcounts, darkframes)
+    N = size(darkframes, 3)
     @. darkcounts .= -log1p(-darkcounts / N)
     return darkcounts
 end

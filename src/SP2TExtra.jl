@@ -5,10 +5,16 @@ using GLMakie, SP2T, ColorSchemes, Combinatorics, StatsBase
 
 export readbin, getframes, extractROI
 
+export getdarkcounts
+
+export ntracks, findMAP, findML
+
 export viewframes, visualize
 
 include("import.jl")
-include("data_viewer.jl")
-include("visualize.jl")
+include("preprocess.jl")
+include("previsualize.jl")
+include("postprocess.jl")
+include("postvisualize.jl")
 
 end
