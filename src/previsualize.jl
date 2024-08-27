@@ -13,6 +13,7 @@ theme_dataviewer = Theme(
         yticksvisible=false,
     ),
     Poly=(strokecolor=ColorSchemes.tab10[1], strokewidth=2),
+    Heatmap=(; colormap=:bone),
 )
 
 function validaterange(s::String)
@@ -92,9 +93,10 @@ function viewframes(
 
     colorrange = @lift (0, $(slgrid.sliders[2].value))
 
-    mainframe = @lift view(frames, :, :, $(slgrid.sliders[1].value))
-    startframe = @lift view(frames, :, :, $lowerindex)
-    endframe = @lift view(frames, :, :, $upperindex)
+    frameobs = []
+    push!(frameobs, @lift view(frames, :, :, $(slgrid.sliders[1].value)))
+    push!(frameobs, @lift view(frames, :, :, $lowerindex))
+    push!(frameobs, @lift view(frames, :, :, $upperindex))
 
     tracks2 = tracks ./ pxsize
     trajs2D = []
@@ -110,30 +112,9 @@ function viewframes(
         )
     end
 
-    heatmap!(
-        axes[1],
-        1:width,
-        1:height,
-        mainframe,
-        colormap=:bone,
-        colorrange=colorrange,
-    )
-    heatmap!(
-        axes[2],
-        1:width,
-        1:height,
-        startframe,
-        colormap=:bone,
-        colorrange=colorrange,
-    )
-    heatmap!(
-        axes[3],
-        1:width,
-        1:height,
-        endframe,
-        colormap=:bone,
-        colorrange=colorrange,
-    )
+    for (i, frame) in enumerate(frameobs)
+        heatmap!(axes[i], 1:width, 1:height, frame, colorrange=colorrange)
+    end
     limits!.(axes, 0.5, width + 0.5, 0.5, height + 0.5)
 
     foreach(x -> lines!(axes[1], x), trajs2Dobs)
