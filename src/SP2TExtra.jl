@@ -1,4 +1,4 @@
-module SP2TVis
+module SP2TExtra
 
 using GLMakie, SP2T, ColorSchemes, Combinatorics, StatsBase
 # Write your package code here.
