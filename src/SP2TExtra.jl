@@ -1,13 +1,13 @@
 module SP2TExtra
 
 using GLMakie, SP2T, ColorSchemes, Combinatorics, StatsBase
-# Write your package code here.
+using NaNStatistics: histcounts, histcounts!
 
 export readbin, getframes, extractROI
 
 export getdarkcounts
 
-export ntracks, findMAP, findML
+export ntracks, findMAP, findML, uncertainty1D, uncertainty2D
 
 export viewframes, visualize
 
