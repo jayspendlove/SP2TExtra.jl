@@ -14,24 +14,30 @@ findML(chain::Chain; burn_in::Real=0) =
 
 function uncertainty1D(S::AbstractVector{<:Sample}, xrange::AbstractRange, yrange::AbstractRange; factor::Real=1)
     N = size(S[1].tracks, 1)
-    xcounts = zeros(Int, N, length(xrange) - 1)
-    ycounts = zeros(Int, N, length(yrange) - 1)
+    xcounts = zeros(Float64, N, length(xrange) - 1)
+    ycounts = zeros(Float64, N, length(yrange) - 1)
+    ntracks = 0
     for s in S
+        ntracks += size(s.tracks, 3)
         @views for (n, x) in enumerate(eachslice(s.tracks, dims=1))
             histcounts!(xcounts[n, :], x[1, :], xrange ./ factor)
             histcounts!(ycounts[n, :], x[2, :], yrange ./ factor)
         end
     end
+    xcounts ./= ntracks
+    ycounts ./= ntracks
     xcounts, ycounts
 end
 
 function uncertainty2D(S::AbstractVector{<:Sample}, xrange::AbstractRange, yrange::AbstractRange; factor::Real=1)
     N = size(S[1].tracks, 1)
-    counts = zeros(Int, N, length(xrange) - 1, length(xrange) - 1)
+    counts = zeros(Float64, N, length(xrange) - 1, length(xrange) - 1)
+    ntracks = 0
     for s in S
+        ntracks += size(s.tracks, 3)
         @views for (n, x) in enumerate(eachslice(s.tracks, dims=1))
             histcounts!(counts[n, :, :], x[1, :], x[2, :], xrange ./ factor, yrange ./ factor)
         end
     end
-    counts
+    counts ./= ntracks
 end
