@@ -17,9 +17,9 @@ function uncertainty1D(S::AbstractVector{<:Sample}, xrange::AbstractRange, yrang
     xcounts = zeros(Int, N, length(xrange) - 1)
     ycounts = zeros(Int, N, length(yrange) - 1)
     for s in S
-        @views for (n, r) in enumerate(eachslice(s.tracks, dims=1))
-            histcounts!(xcounts[n, :], r[1, :], xrange ./ factor)
-            histcounts!(ycounts[n, :], r[2, :], yrange ./ factor)
+        @views for (n, x) in enumerate(eachslice(s.tracks, dims=1))
+            histcounts!(xcounts[n, :], x[1, :], xrange ./ factor)
+            histcounts!(ycounts[n, :], x[2, :], yrange ./ factor)
         end
     end
     xcounts, ycounts
@@ -29,8 +29,8 @@ function uncertainty2D(S::AbstractVector{<:Sample}, xrange::AbstractRange, yrang
     N = size(S[1].tracks, 1)
     counts = zeros(Int, N, length(xrange) - 1, length(xrange) - 1)
     for s in S
-        @views for (n, r) in enumerate(eachslice(s.tracks, dims=1))
-            histcounts!(counts[n, :, :], r[1, :], r[2, :], xrange ./ factor, yrange ./ factor)
+        @views for (n, x) in enumerate(eachslice(s.tracks, dims=1))
+            histcounts!(counts[n, :, :], x[1, :], x[2, :], xrange ./ factor, yrange ./ factor)
         end
     end
     counts

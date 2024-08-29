@@ -1,7 +1,6 @@
 module SP2TExtra
 
 using GLMakie, SP2T, ColorSchemes, Combinatorics, StatsBase
-using NaNStatistics: histcounts, histcounts!
 using XMLDict
 
 export readbin, getframes, extractROI
@@ -10,6 +9,7 @@ export ntracks, findMAP, findML, uncertainty1D, uncertainty2D
 export viewframes, visualize
 export xml2tracks
 
+include("histcounts.jl")
 include("import.jl")
 include("preprocess.jl")
 include("previsualize.jl")
