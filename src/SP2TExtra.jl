@@ -5,7 +5,7 @@ using XMLDict
 
 export readbin, getframes, extractROI
 export getdarkcounts
-export ntracks, findMAP, findML, uncertainty1D, uncertainty2D
+export ntracks, findMAP, findML, credible1D, credible2D
 export viewframes, visualize
 export xml2tracks
 

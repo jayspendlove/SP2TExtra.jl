@@ -12,7 +12,7 @@ findMAP(chain::Chain; burn_in::Real=0) =
 findML(chain::Chain; burn_in::Real=0) =
     @views findmax([s.logℒ for s in chain.samples[burn_in+1:end]])
 
-function uncertainty1D(S::AbstractVector{<:Sample}, xrange::AbstractRange, yrange::AbstractRange; factor::Real=1)
+function credible1D(S::AbstractVector{<:Sample}, xrange::AbstractRange, yrange::AbstractRange; factor::Real=1)
     N = size(S[1].tracks, 1)
     xcounts = zeros(Float64, N, length(xrange) - 1)
     ycounts = zeros(Float64, N, length(yrange) - 1)
@@ -29,7 +29,7 @@ function uncertainty1D(S::AbstractVector{<:Sample}, xrange::AbstractRange, yrang
     xcounts, ycounts
 end
 
-function uncertainty2D(S::AbstractVector{<:Sample}, xrange::AbstractRange, yrange::AbstractRange; factor::Real=1)
+function credible2D(S::AbstractVector{<:Sample}, xrange::AbstractRange, yrange::AbstractRange; factor::Real=1)
     N = size(S[1].tracks, 1)
     counts = zeros(Float64, N, length(xrange) - 1, length(xrange) - 1)
     ntracks = 0
