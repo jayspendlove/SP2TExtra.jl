@@ -1,8 +1,8 @@
-function readparticle!(x::AbstractArray{<:Real,3}, particle::XMLDict.XMLDictElement, B::Integer, H::Integer)
+function readparticle!(x::AbstractArray{<:Real,2}, particle::XMLDict.XMLDictElement, B::Integer, H::Integer)
     for detection in particle["detection"]
         trange = tryparse(Int, detection[:t]) * B .+ (1:B)
-        x[trange, 1, 1] .= tryparse(Float64, detection[:x]) + 0.5
-        x[trange, 2, 1] .= H - 0.5 - tryparse(Float64, detection[:y])
+        x[trange, 1] .= tryparse(Float64, detection[:x]) + 0.5
+        x[trange, 2] .= H - 0.5 - tryparse(Float64, detection[:y])
     end
 end
 
@@ -27,8 +27,9 @@ function xml2tracks(xml::String; batchsize::Integer, nframes::Integer, height::I
 end
 
 function xml2tracks(xmls::AbstractVector{String}; batchsizes::AbstractVector{<:Integer}, nframes::Integer, height::Integer, pxsize::Real)
-    tracks = Vector{Vector{Float64}}()
+    tracks = Vector{Array{Float64,3}}()
     for (xml, batchsize) in zip(xmls, batchsizes)
         push!(tracks, xml2tracks(xml; batchsize=batchsize, nframes=nframes, height=height, pxsize=pxsize))
     end
+    tracks
 end
