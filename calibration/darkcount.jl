@@ -1,5 +1,5 @@
 # using SP2T
-using SP2TVis
+using SP2TExtra
 using JLD2
 using GLMakie
 using ColorSchemes
