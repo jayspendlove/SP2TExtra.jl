@@ -47,18 +47,18 @@ function localization_error(S::AbstractVector, gt::Sample)
     return localization_errors, order_errors
 end
 
-function visualize(groundtruth::Sample, data::Data)
+function visualize(groundtruth::Sample, measurements::AbstractArray, detector::PixelDetector)
     # if isa(frames, CuArray)
     #     to_cpu!(video)
     # end
     # expparams
     x = groundtruth.tracks
     nemitters = size(groundtruth.tracks, 2)
-    pxsizee = pxsize(data)
+    pxsizee = detector.pxsize
 
     g = SP2T.get_pxPSF(groundtruth.tracks, data)
 
-    t = 1:size(data.frames, 3)
+    t = 1:size(measurements, 3)
     fig = Figure()
     ax = [
         Axis3(fig[1:3, 1], zlabel="t"),
@@ -71,23 +71,23 @@ function visualize(groundtruth::Sample, data::Data)
         lines!(ax[2], t, view(x, 3, m, :))
     end
 
-    sl_x = Slider(fig[5, 1], range=1:size(data.frames, 3), startvalue=1)
+    sl_x = Slider(fig[5, 1], range=1:size(measurements, 3), startvalue=1)
 
     frame1 = lift(sl_x.value) do x
         view(g, :, :, x)
     end
 
     frame2 = lift(sl_x.value) do x
-        view(data.frames, :, :, x)
+        view(measurements, :, :, x)
     end
 
     # f = lift(sl_x.value) do x
     #     x
     # end
 
-    collected_frame = dropdims(sum(data.frames, dims=3), dims=3)
+    collected_frame = dropdims(sum(measurements, dims=3), dims=3)
 
-    hm = heatmap!(ax[1], data.pxboundsx, data.pxboundsy, frame1, colormap=(:grays, 0.7))
+    hm = heatmap!(ax[1], detector.pxboundsx, detector.pxboundsy, frame1, colormap=(:grays, 0.7))
 
     vl = vlines!(ax[2], t[1])
 
@@ -98,16 +98,16 @@ function visualize(groundtruth::Sample, data::Data)
 
     heatmap!(
         ax[3],
-        data.pxboundsx,
-        data.pxboundsy .+ (4 * pxsizee + 2 * data.pxboundsy[end]),
+        detector.pxboundsx,
+        detector.pxboundsy .+ (4 * pxsizee + 2 * detector.pxboundsy[end]),
         frame1,
         colormap=:grays,
     )
     translate!(
         text!(
             ax[3],
-            data.pxboundsx[1],
-            data.pxboundsy[end] + (4 * pxsizee + 1 * data.pxboundsy[end]),
+            detector.pxboundsx[1],
+            detector.pxboundsy[end] + (4 * pxsizee + 1 * detector.pxboundsy[end]),
             text="asdasd",
             fontsize=20,
         ),
@@ -118,16 +118,16 @@ function visualize(groundtruth::Sample, data::Data)
 
     heatmap!(
         ax[3],
-        data.pxboundsx,
-        data.pxboundsy .+ (2 * pxsizee + data.pxboundsy[end]),
+        detector.pxboundsx,
+        detector.pxboundsy .+ (2 * pxsizee + detector.pxboundsy[end]),
         frame2,
         colormap=:grays,
         colorrange=(false, true),
     )
     heatmap!(
         ax[3],
-        data.pxboundsx,
-        data.pxboundsy,
+        detector.pxboundsx,
+        detector.pxboundsy,
         collected_frame,
         colormap=:grays,
         colorrange=(0, maximum(collected_frame)),
@@ -138,8 +138,8 @@ function visualize(groundtruth::Sample, data::Data)
     hidedecorations!(ax[3])
     hidespines!(ax[3])
 
-    (lowerx, upperx) = get_limits(data.pxboundsx, view(x, 1, :, :))
-    (lowery, uppery) = get_limits(data.pxboundsy, view(x, 2, :, :))
+    (lowerx, upperx) = get_limits(detector.pxboundsx, view(x, 1, :, :))
+    (lowery, uppery) = get_limits(detector.pxboundsy, view(x, 2, :, :))
 
     xlims!(ax[1], lowerx, upperx)
     ylims!(ax[1], lowery, uppery)
@@ -192,7 +192,7 @@ end
 
 function visualize(
     samples::AbstractVector{<:Sample},
-    data::Data,
+    measurements::AbstractArray,
     gt::Sample,
     # c::Chain;
     num_grid::Integer=500,
@@ -217,7 +217,7 @@ function visualize(
     x = view(all_trajectories, :, :, 1)
     y = view(all_trajectories, :, :, 2)
     z = view(all_trajectories, :, :, 3)
-    t = 1:size(data.frames, 3)
+    t = 1:size(measurements, 3)
     @show ~, MAP_idx = findmax([i.ln𝒫 for i in s])
 
     B = size(x, 1)
@@ -253,7 +253,7 @@ function visualize(
     translate!(hm2, 0, 0, -0.2)
 
     Colorbar(fig[0, 1], hm2, vertical=false, size=10)
-    for j = 1:get_B(gt)
+    for j = 1:gt.nemitters
         lines!(
             ax[1],
             t,
@@ -313,7 +313,7 @@ function visualize(
     )
     ylims!(ax[3], 0, nothing)
 
-    D = get_D(s)
+    D = [sam.msd for sam in s]
     D_CI = quantile(D, [0.025, 0.5, 0.975])
     vspan!(ax[4], D_CI[1], D_CI[3], color=:grey80)
     hist!(ax[4], D, color=histcolor, normalization=:pdf)
