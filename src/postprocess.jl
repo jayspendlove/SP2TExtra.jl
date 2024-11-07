@@ -6,11 +6,21 @@ function ntracks(chain::Chain; burn_in::Real=0)
     n
 end
 
-findMAP(chain::Chain; burn_in::Real=0) =
-    @views findmax([s.log𝒫 for s in chain.samples[burn_in+1:end]])
-
-findML(chain::Chain; burn_in::Real=0) =
-    @views findmax([s.logℒ for s in chain.samples[burn_in+1:end]])
+function credible1D(S::AbstractVector{<:Sample}, i::Integer, xrange::AbstractRange, yrange::AbstractRange; factor::Real=1)
+    N = size(S[1].tracks, 1)
+    xcounts = zeros(Float64, N, length(xrange) - 1)
+    ycounts = zeros(Float64, N, length(yrange) - 1)
+    ntracks = length(S)
+    for s in S
+        @views for (n, x) in enumerate(eachslice(s.tracks, dims=1))
+            histcounts!(xcounts[n, :], x[1, i], xrange ./ factor)
+            histcounts!(ycounts[n, :], x[2, i], yrange ./ factor)
+        end
+    end
+    xcounts ./= ntracks
+    ycounts ./= ntracks
+    xcounts, ycounts
+end
 
 function credible1D(S::AbstractVector{<:Sample}, xrange::AbstractRange, yrange::AbstractRange; factor::Real=1)
     N = size(S[1].tracks, 1)
@@ -27,6 +37,18 @@ function credible1D(S::AbstractVector{<:Sample}, xrange::AbstractRange, yrange::
     xcounts ./= ntracks
     ycounts ./= ntracks
     xcounts, ycounts
+end
+
+function credible2D(S::AbstractVector{<:Sample}, i::Integer, xrange::AbstractRange, yrange::AbstractRange; factor::Real=1)
+    N = size(S[1].tracks, 1)
+    counts = zeros(Float64, N, length(xrange) - 1, length(xrange) - 1)
+    ntracks = length(S)
+    for s in S
+        @views for (n, x) in enumerate(eachslice(s.tracks, dims=1))
+            histcounts!(counts[n, :, :], x[1, i], x[2, i], xrange ./ factor, yrange ./ factor)
+        end
+    end
+    counts ./= ntracks
 end
 
 function credible2D(S::AbstractVector{<:Sample}, xrange::AbstractRange, yrange::AbstractRange; factor::Real=1)
