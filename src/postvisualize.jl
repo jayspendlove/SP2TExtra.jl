@@ -47,7 +47,7 @@ function localization_error(S::AbstractVector, gt::Sample)
     return localization_errors, order_errors
 end
 
-function visualize(groundtruth::Sample, measurements::AbstractArray, detector::PixelDetector)
+function visualize(groundtruth::Sample, measurements::AbstractArray, detector::SP2T.PixelDetector)
     # if isa(frames, CuArray)
     #     to_cpu!(video)
     # end
