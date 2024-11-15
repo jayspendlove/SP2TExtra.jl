@@ -13,8 +13,8 @@ function credible1D(S::AbstractVector{<:Sample}, i::Integer, xrange::AbstractRan
     ntracks = length(S)
     for s in S
         @views for (n, x) in enumerate(eachslice(s.tracks, dims=1))
-            histcounts!(xcounts[n, :], x[1, i], xrange ./ factor)
-            histcounts!(ycounts[n, :], x[2, i], yrange ./ factor)
+            histcounts!(xcounts[n, :], x[1, i:i], xrange ./ factor)
+            histcounts!(ycounts[n, :], x[2, i:i], yrange ./ factor)
         end
     end
     xcounts ./= ntracks
@@ -45,7 +45,7 @@ function credible2D(S::AbstractVector{<:Sample}, i::Integer, xrange::AbstractRan
     ntracks = length(S)
     for s in S
         @views for (n, x) in enumerate(eachslice(s.tracks, dims=1))
-            histcounts!(counts[n, :, :], x[1, i], x[2, i], xrange ./ factor, yrange ./ factor)
+            histcounts!(counts[n, :, :], x[1, i:i], x[2, i:i], xrange ./ factor, yrange ./ factor)
         end
     end
     counts ./= ntracks
