@@ -13,8 +13,8 @@ function credible1D(S::AbstractVector{<:Sample}, i::Integer, xrange::AbstractRan
     ntracks = length(S)
     for s in S
         @views for (n, x) in enumerate(eachslice(s.tracks, dims=1))
-            histcounts!(xcounts[n, :], x[1, i:i] .+ xshift, xrange ./ factor)
-            histcounts!(ycounts[n, :], x[2, i:i] .+ yshift, yrange ./ factor)
+            histcounts!(xcounts[n, :], (x[1, i:i] .+ xshift) .* factor, xrange)
+            histcounts!(ycounts[n, :], (x[2, i:i] .+ yshift) .* factor, yrange)
         end
     end
     xcounts ./= ntracks
@@ -30,8 +30,8 @@ function credible1D(S::AbstractVector{<:Sample}, xrange::AbstractRange, yrange::
     for s in S
         ntracks += size(s.tracks, 3)
         @views for (n, x) in enumerate(eachslice(s.tracks, dims=1))
-            histcounts!(xcounts[n, :], x[1, :] .+ xshift, xrange ./ factor)
-            histcounts!(ycounts[n, :], x[2, :] .+ yshift, yrange ./ factor)
+            histcounts!(xcounts[n, :], (x[1, :] .+ xshift) .* factor, xrange)
+            histcounts!(ycounts[n, :], (x[2, :] .+ yshift) .* factor, yrange)
         end
     end
     xcounts ./= ntracks
@@ -45,7 +45,7 @@ function credible2D(S::AbstractVector{<:Sample}, i::Integer, xrange::AbstractRan
     ntracks = length(S)
     for s in S
         @views for (n, x) in enumerate(eachslice(s.tracks, dims=1))
-            histcounts!(counts[n, :, :], x[1, i:i] .+ xshift, x[2, i:i] .+ yshift, xrange ./ factor, yrange ./ factor)
+            histcounts!(counts[n, :, :], (x[1, i:i] .+ xshift) .* factor, (x[2, i:i] .+ yshift .* factor), xrange, yrange)
         end
     end
     counts ./= ntracks
@@ -58,7 +58,7 @@ function credible2D(S::AbstractVector{<:Sample}, xrange::AbstractRange, yrange::
     for s in S
         ntracks += size(s.tracks, 3)
         @views for (n, x) in enumerate(eachslice(s.tracks, dims=1))
-            histcounts!(counts[n, :, :], x[1, :] .+ xshift, x[2, :] .+ yshift, xrange ./ factor, yrange ./ factor)
+            histcounts!(counts[n, :, :], (x[1, :] .+ xshift) .* factor, (x[2, :] .+ yshift) .* factor, xrange, yrange)
         end
     end
     counts ./= ntracks
