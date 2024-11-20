@@ -6,15 +6,15 @@ function ntracks(chain::Chain; burn_in::Real=0)
     n
 end
 
-function credible1D(S::AbstractVector{<:Sample}, i::Integer, xrange::AbstractRange, yrange::AbstractRange; factor::Real=1)
+function credible1D(S::AbstractVector{<:Sample}, i::Integer, xrange::AbstractRange, yrange::AbstractRange; factor::Real=1, xshift::Real=0, yshift::Real=0)
     N = size(S[1].tracks, 1)
     xcounts = zeros(Float64, N, length(xrange) - 1)
     ycounts = zeros(Float64, N, length(yrange) - 1)
     ntracks = length(S)
     for s in S
         @views for (n, x) in enumerate(eachslice(s.tracks, dims=1))
-            histcounts!(xcounts[n, :], x[1, i:i], xrange ./ factor)
-            histcounts!(ycounts[n, :], x[2, i:i], yrange ./ factor)
+            histcounts!(xcounts[n, :], x[1, i:i] .+ xshift, xrange ./ factor)
+            histcounts!(ycounts[n, :], x[2, i:i] .+ yshift, yrange ./ factor)
         end
     end
     xcounts ./= ntracks
@@ -22,7 +22,7 @@ function credible1D(S::AbstractVector{<:Sample}, i::Integer, xrange::AbstractRan
     xcounts, ycounts
 end
 
-function credible1D(S::AbstractVector{<:Sample}, xrange::AbstractRange, yrange::AbstractRange; factor::Real=1)
+function credible1D(S::AbstractVector{<:Sample}, xrange::AbstractRange, yrange::AbstractRange; factor::Real=1, xshift::Real=0, yshift::Real=0)
     N = size(S[1].tracks, 1)
     xcounts = zeros(Float64, N, length(xrange) - 1)
     ycounts = zeros(Float64, N, length(yrange) - 1)
@@ -30,8 +30,8 @@ function credible1D(S::AbstractVector{<:Sample}, xrange::AbstractRange, yrange::
     for s in S
         ntracks += size(s.tracks, 3)
         @views for (n, x) in enumerate(eachslice(s.tracks, dims=1))
-            histcounts!(xcounts[n, :], x[1, :], xrange ./ factor)
-            histcounts!(ycounts[n, :], x[2, :], yrange ./ factor)
+            histcounts!(xcounts[n, :], x[1, :] .+ xshift, xrange ./ factor)
+            histcounts!(ycounts[n, :], x[2, :] .+ yshift, yrange ./ factor)
         end
     end
     xcounts ./= ntracks
@@ -39,26 +39,26 @@ function credible1D(S::AbstractVector{<:Sample}, xrange::AbstractRange, yrange::
     xcounts, ycounts
 end
 
-function credible2D(S::AbstractVector{<:Sample}, i::Integer, xrange::AbstractRange, yrange::AbstractRange; factor::Real=1)
+function credible2D(S::AbstractVector{<:Sample}, i::Integer, xrange::AbstractRange, yrange::AbstractRange; factor::Real=1, xshift::Real=0, yshift::Real=0)
     N = size(S[1].tracks, 1)
     counts = zeros(Float64, N, length(xrange) - 1, length(xrange) - 1)
     ntracks = length(S)
     for s in S
         @views for (n, x) in enumerate(eachslice(s.tracks, dims=1))
-            histcounts!(counts[n, :, :], x[1, i:i], x[2, i:i], xrange ./ factor, yrange ./ factor)
+            histcounts!(counts[n, :, :], x[1, i:i] .+ xshift, x[2, i:i] .+ yshift, xrange ./ factor, yrange ./ factor)
         end
     end
     counts ./= ntracks
 end
 
-function credible2D(S::AbstractVector{<:Sample}, xrange::AbstractRange, yrange::AbstractRange; factor::Real=1)
+function credible2D(S::AbstractVector{<:Sample}, xrange::AbstractRange, yrange::AbstractRange; factor::Real=1, xshift::Real=0, yshift::Real=0)
     N = size(S[1].tracks, 1)
     counts = zeros(Float64, N, length(xrange) - 1, length(xrange) - 1)
     ntracks = 0
     for s in S
         ntracks += size(s.tracks, 3)
         @views for (n, x) in enumerate(eachslice(s.tracks, dims=1))
-            histcounts!(counts[n, :, :], x[1, :], x[2, :], xrange ./ factor, yrange ./ factor)
+            histcounts!(counts[n, :, :], x[1, :] .+ xshift, x[2, :] .+ yshift, xrange ./ factor, yrange ./ factor)
         end
     end
     counts ./= ntracks
