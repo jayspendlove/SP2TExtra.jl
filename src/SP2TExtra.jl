@@ -1,10 +1,10 @@
 module SP2TExtra
 
-using GLMakie, SP2T, ColorSchemes, Combinatorics, StatsBase
+using GLMakie, SP2T, ColorSchemes, Combinatorics, StatsBase, TiffImages, MAT
 using XMLDict
 
 export binframes
-export readbin, getframes, extractROI
+export readbin, getframes, extractROI, readtiff
 export getdarkcounts
 export ntracks, credible1D, credible2D
 export viewframes, visualize

@@ -2,7 +2,7 @@
 
 # Both signed and unsigned integers would work, as the number of pixels is much fewer than the upper limit of either type.
 
-function readbin(path; width::Integer = 512, height::Integer = 512)
+function readbin(path; width::Integer=512, height::Integer=512)
     files = checkpath(path)
     printfilelist(files)
     signals = _readbin(files)
@@ -22,7 +22,7 @@ isbinfile(path) = isfile(path) && endswith(path, ".bin")
 
 isbindir(path) = isdir(path) && any(f -> endswith(f, ".bin"), readdir(path))
 
-listbins(dir) = filter(f -> endswith(f, ".bin"), readdir(dir, join = true))
+listbins(dir) = filter(f -> endswith(f, ".bin"), readdir(dir, join=true))
 
 function printfilelist(files::AbstractVector)
     println("Found the following binary file(s):")
@@ -59,7 +59,7 @@ function readsignals!(
 )
     start = 1
     @inbounds for (file, number) in zip(files, nsignals)
-        read!(file, view(signals, range(start, length = number)))
+        read!(file, view(signals, range(start, length=number)))
         start += number
     end
     return signals .+= 1
@@ -168,7 +168,7 @@ function extractROI!(cartesianindices, ROIbounds)
     newupperbounds = view(ROIbounds, 1:1, :) .- 1
     cartesianindices .-= newupperbounds
     newupperbounds .= view(ROIbounds, 2:2, :) .- newupperbounds
-    inROI = vec(all(0 .< cartesianindices .≤ newupperbounds, dims = 2))
+    inROI = vec(all(0 .< cartesianindices .≤ newupperbounds, dims=2))
     return cartesianindices[inROI, :]
 end
 
@@ -219,4 +219,12 @@ function linearize!(
         (cartesianindices[:, 2] - 1) * height +
         cartesianindices[:, 1]
     return indices
+end
+
+function readtiff(path; targettype::DataType=Float64)
+    img = TiffImages.load(path)
+    bits = [ifd[TiffImages.BITSPERSAMPLE].data for ifd in img.ifds]
+    img = convert(Array{Float64,3}, img)
+    img .*= 2 .^ reshape(bits, 1, 1, :) .- 1
+    return convert(Array{targettype,3}, img)
 end
