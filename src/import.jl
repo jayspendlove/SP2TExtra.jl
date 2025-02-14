@@ -221,10 +221,17 @@ function linearize!(
     return indices
 end
 
-function readtiff(path; targettype::DataType=Float64)
-    img = TiffImages.load(path)
-    bits = [ifd[TiffImages.BITSPERSAMPLE].data for ifd in img.ifds]
-    img = convert(Array{Float64,3}, img)
-    img .*= 2 .^ reshape(bits, 1, 1, :) .- 1
-    return convert(Array{targettype,3}, img)
+function readtiff(path; targettype::T=UInt16) where {T<:Integer}
+    readouts = TiffImages.load(path)
+    bits = [ifd[TiffImages.BITSPERSAMPLE].data for ifd in readouts.ifds]
+    readouts = convert(Array{Float64,3}, readouts)
+    readouts .*= 2 .^ reshape(bits, 1, 1, :) .- 1
+    return convert(Array{targettype,3}, readouts)
+end
+
+function readmat(path; varname::String)
+    file = matopen("matfile.mat")
+    readouts = read(path, varname)
+    close(file)
+    return readouts
 end
