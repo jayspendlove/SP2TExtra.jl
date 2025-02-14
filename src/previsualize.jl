@@ -12,7 +12,7 @@ theme_dataviewer = Theme(
         yticklabelsvisible=false,
         yticksvisible=false,
     ),
-    Poly=(strokecolor=ColorSchemes.tab10[1], strokewidth=2),
+    Poly=(strokecolormap=:tab10, strokecolor=1, strokewidth=2),
     Heatmap=(; colormap=:bone),
 )
 
