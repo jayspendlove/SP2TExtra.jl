@@ -121,7 +121,7 @@ function viewframes(
 
     rect = getrect(w_sl, h_sl)
     for ax in axes
-        poly!(ax, rect, color=:blue)
+        poly!(ax, rect)
     end
 
     verts = getvertices(rect)
