@@ -119,14 +119,14 @@ function viewframes(
 
     foreach(x -> lines!(axes[1], x), trajs2Dobs)
 
-    rect = getrect(w_sl, h_sl)
-    for ax in axes
-        poly!(ax, rect)
-    end
+    # rect = getrect(w_sl, h_sl)
+    # for ax in axes
+    #     poly!(ax, rect, color=:blue)
+    # end
 
-    verts = getvertices(rect)
-    text!(axes[1], verts[1], align=(:left, :bottom), text=sl_tags[1], color=:white)
-    text!(axes[1], verts[2], align=(:right, :top), text=sl_tags[2], color=:white)
+    # verts = getvertices(rect)
+    # text!(axes[1], verts[1], align=(:left, :bottom), text=sl_tags[1], color=:white)
+    # text!(axes[1], verts[2], align=(:right, :top), text=sl_tags[2], color=:white)
 
     Label(fig[0, 1:2], "Frame viewer")
     Label(fig[0, 3], "Range viewer")
