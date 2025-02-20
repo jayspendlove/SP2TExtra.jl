@@ -43,9 +43,9 @@ function credible2D(S::AbstractVector{<:Sample}, i::Integer, xedges::AbstractRan
     N = size(S[1].tracks, 1)
     counts = zeros(Float64, N, length(xedges) - 1, length(yedges) - 1)
     ntracks = length(S)
-    for s in S
+    @views for s in S
         for (n, x) in enumerate(eachslice(s.tracks, dims=1))
-            @views histcounts!(counts[n, :, :], (x[2, i:i] .+ yshift) .* factor, (x[1, i:i] .+ xshift .* factor), yedges, xedges)
+            histcounts!(counts[:, :, n], (x[2, i:i] .+ yshift) .* factor, (x[1, i:i] .+ xshift) .* factor, yedges, xedges)
         end
     end
     counts ./= ntracks
@@ -55,10 +55,10 @@ function credible2D(S::AbstractVector{<:Sample}, xedges::AbstractRange, yedges::
     N = size(S[1].tracks, 1)
     counts = zeros(Float64, N, length(xedges) - 1, length(yedges) - 1)
     ntracks = 0
-    for s in S
+    @views for s in S
         ntracks += size(s.tracks, 3)
         for (n, x) in enumerate(eachslice(s.tracks, dims=1))
-            @views histcounts!(counts[n, :, :], (x[2, :] .+ yshift) .* factor, (x[1, :] .+ xshift) .* factor, yedges, xedges)
+            histcounts!(counts[n, :, :], (x[2, :] .+ yshift) .* factor, (x[1, :] .+ xshift) .* factor, yedges, xedges)
         end
     end
     counts ./= ntracks
