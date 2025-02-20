@@ -1,6 +1,6 @@
 module SP2TExtra
 
-using GLMakie, SP2T, Combinatorics, StatsBase, TiffImages, MAT
+using GLMakie, SP2T, Combinatorics, StatsBase, TiffImages, MAT, ImageCore
 using XMLDict
 
 export binframes
@@ -17,5 +17,6 @@ include("preprocess.jl")
 include("previsualize.jl")
 include("postprocess.jl")
 include("trackmate.jl")
+include("tiff.jl")
 
 end
