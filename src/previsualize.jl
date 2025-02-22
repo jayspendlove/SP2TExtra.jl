@@ -12,7 +12,7 @@ theme_dataviewer = Theme(
         yticklabelsvisible=false,
         yticksvisible=false,
     ),
-    Poly=(strokecolormap=:tab10, strokecolor=1, strokewidth=2),
+    Poly=(; strokecolor=(:deepskyblue3, 0.5), strokewidth=2),
     Heatmap=(; colormap=:bone),
 )
 
@@ -119,10 +119,10 @@ function viewframes(
 
     foreach(x -> lines!(axes[1], x), trajs2Dobs)
 
-    # rect = getrect(w_sl, h_sl)
-    # for ax in axes
-    #     poly!(ax, rect, color=:blue)
-    # end
+    rect = getrect(w_sl, h_sl)
+    for ax in axes
+        poly!(ax, rect, color=(:white, 0))
+    end
 
     # verts = getvertices(rect)
     # text!(axes[1], verts[1], align=(:left, :bottom), text=sl_tags[1], color=:white)
