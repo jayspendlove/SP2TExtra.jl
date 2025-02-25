@@ -1,3 +1,7 @@
+abstract type TiffMeta end
+
+struct ImageJTIff <: TiffMeta end
+
 function getbits(ifds::AbstractVector{<:TiffImages.IFD})
     bits = [ifd[TiffImages.BITSPERSAMPLE].data for ifd in ifds]
     if length(unique(bits)) > 1
@@ -17,14 +21,7 @@ function getpixelsize(ifds::AbstractVector{<:TiffImages.IFD})
     return float(pixelsizex[1])
 end
 
-function parsestring(str::AbstractString)
-    value = split(str, "=")[2]
-    if occursin("\\u", value)
-        return Char(parse(UInt32, value[3:6], base=16)) * value[7:end]
-    else
-        return value
-    end
-end
+parsestring(str::AbstractString) = unescape_string(split(str, "=")[2])
 
 function parse_descriptions(ifd::TiffImages.IFD, keyword::String, T::DataType)
     descriptions = split(ifd[TiffImages.IMAGEDESCRIPTION].data, "\n")
@@ -45,7 +42,7 @@ getperiod(ifds::AbstractVector{<:TiffImages.IFD}) = getperiod(ifds[1])
 getunit(ifd::TiffImages.IFD) = parse_descriptions(ifd, "unit", String)
 getunit(ifds::AbstractVector{<:TiffImages.IFD}) = getunit(ifds[1])
 
-function readtiff(path::String; targettype::Type{T}=UInt16) where {T<:Integer}
+function readtiff(path::String)
     readouts = TiffImages.load(path)
     ifd = ifds(readouts)
     bits = getbits(ifd)
@@ -56,5 +53,22 @@ function readtiff(path::String; targettype::Type{T}=UInt16) where {T<:Integer}
     )
     readouts = convert(Array{Float64,3}, readouts)
     readouts .*= 2^bits - 1
-    return convert(Array{targettype,3}, readouts), metadata
+    return convert(Array{UInt16,3}, readouts), metadata
 end
+
+function writetiff(frames::AbstractArray{UInt16,3}, path::String, ::ImageJTIff; px_size::Real, unit::AbstractString, period::Real)
+    tiff = TiffImages.DenseTaggedImage(reinterpret(Gray{N0f16}, frames))
+    ifdvec = ifds(tiff)
+    nframes = size(frames, 3)
+    for ifd in ifdvec
+        res = Rational{UInt32}(round(1 / px_size, digits=3))
+        ifd[TiffImages.XRESOLUTION] = res
+        ifd[TiffImages.YRESOLUTION] = res
+        ifd[TiffImages.RESOLUTIONUNIT] = oneunit(UInt8)
+    end
+    unit == "μm" && (unit = "um")
+    ifdvec[1][TiffImages.IMAGEDESCRIPTION] = "ImageJ=1.54p\nunit=$unit\nfinterval=$period"
+    TiffImages.save(path, tiff)
+end
+
+# writetiff(frames::AbstractArray{UInt16,3}, path::String, ::ImageJTIff; metadata::Dict) = writetiff(frames, path, ImageJTIff(); px_size=metadata["pixel size"], unit=metadata["unit"], period=metadata["period"])

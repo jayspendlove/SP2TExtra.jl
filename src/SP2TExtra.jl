@@ -4,7 +4,7 @@ using GLMakie, SP2T, Combinatorics, StatsBase, TiffImages, MAT, ImageCore
 using XMLDict
 
 export binframes
-export readbin, getframes, extractROI, readtiff
+export readbin, getframes, extractROI, readtiff, writetiff, ImageJTIff
 export getdarkcounts
 export ntracks, credible1D, credible2D
 export viewframes
