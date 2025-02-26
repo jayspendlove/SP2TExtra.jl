@@ -56,7 +56,7 @@ function readtiff(path::String)
     return convert(Array{UInt16,3}, readouts), metadata
 end
 
-function writetiff(frames::AbstractArray{UInt16,3}, path::String, ::ImageJTIff; px_size::Real, unit::AbstractString, period::Real)
+function writetiff(path::String, frames::AbstractArray{UInt16,3}, ::ImageJTIff; px_size::Real, unit::AbstractString, period::Real)
     tiff = TiffImages.DenseTaggedImage(reinterpret(Gray{N0f16}, frames))
     ifdvec = ifds(tiff)
     nframes = size(frames, 3)
@@ -67,7 +67,7 @@ function writetiff(frames::AbstractArray{UInt16,3}, path::String, ::ImageJTIff; 
         ifd[TiffImages.RESOLUTIONUNIT] = oneunit(UInt8)
     end
     unit == "μm" && (unit = "um")
-    ifdvec[1][TiffImages.IMAGEDESCRIPTION] = "ImageJ=1.54p\nunit=$unit\nfinterval=$period"
+    ifdvec[1][TiffImages.IMAGEDESCRIPTION] = "unit=$unit\nfinterval=$period"
     TiffImages.save(path, tiff)
 end
 
