@@ -56,7 +56,7 @@ function readtiff(path::String)
     return convert(Array{UInt16,3}, readouts), metadata
 end
 
-function writetiff(path::String, frames::AbstractArray{UInt16,3}, ::ImageJTIff; px_size::Real, unit::AbstractString, period::Real)
+function writetiff(path::String, frames::AbstractArray{UInt16,3}; px_size::Real, unit::AbstractString, period::Real)
     tiff = TiffImages.DenseTaggedImage(reinterpret(Gray{N0f16}, frames))
     ifdvec = ifds(tiff)
     nframes = size(frames, 3)
