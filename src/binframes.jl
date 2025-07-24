@@ -20,10 +20,10 @@ function binframes(frames1bit::AbstractArray{<:Integer,3}, batchsize::Integer)
 end
 
 function meanbin!(binned::AbstractArray{T,3}, tobin::AbstractArray{T,3}, batchsize::Integer) where {T<:AbstractFloat}
-    @views for i in axes(binned, 3)
+    @views for i in axes(binned, 1)
         mean!(
-            binned[:, :, i],
-            tobin[:, :, (i-1)*batchsize+1:i*batchsize],
+            binned[i, :, :],
+            tobin[(i-1)*batchsize+1:i*batchsize, :, :],
             weights(ones(T, size(tobin, 1))),
             dims=1,
         )
@@ -34,9 +34,9 @@ end
 function bintracks(tracks1bit::AbstractArray{<:AbstractFloat,3}, batchsize::Integer)
     binned = similar(
         tracks1bit,
-        size(tracks1bit, 1),
+        size(tracks1bit, 1) ÷ batchsize,
         size(tracks1bit, 2),
-        size(tracks1bit, 3) ÷ batchsize,
+        size(tracks1bit, 3),
     )
     meanbin!(binned, tracks1bit, batchsize)
     return binned
