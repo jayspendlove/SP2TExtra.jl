@@ -22,9 +22,9 @@ end
 function meanbin!(binned::AbstractArray{T,3}, tobin::AbstractArray{T,3}, batchsize::Integer) where {T<:AbstractFloat}
     @views for i in axes(binned, 1)
         mean!(
-            binned[i, :, :],
+            binned[i:i, :, :],
             tobin[(i-1)*batchsize+1:i*batchsize, :, :],
-            weights(ones(T, size(tobin, 1))),
+            weights(ones(T, batchsize)),
             dims=1,
         )
     end
