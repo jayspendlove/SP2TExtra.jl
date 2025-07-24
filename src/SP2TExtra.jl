@@ -3,7 +3,7 @@ module SP2TExtra
 using GLMakie, SP2T, Combinatorics, StatsBase, TiffImages, MAT, ImageCore
 using XMLDict
 
-export binframes
+export binframes, bintracks
 export readbin, getframes, extractROI, readtiff, writetiff, ImageJTIff
 export getdarkcounts
 export ntracks, credible1D, credible2D
