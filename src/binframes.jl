@@ -31,7 +31,7 @@ function meanbin!(binned::AbstractArray{T,3}, tobin::AbstractArray{T,3}, batchsi
     return binned
 end
 
-function bintracks(tracks1bit::AbstractArray{<:Integer,3}, batchsize::Integer)
+function bintracks(tracks1bit::AbstractArray{<:AbstractFloat,3}, batchsize::Integer)
     binned = similar(
         tracks1bit,
         size(tracks1bit, 1),
