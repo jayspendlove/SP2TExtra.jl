@@ -1,11 +1,3 @@
-function ntracks(chain::Chain; burn_in::Real=0)
-    n = 0
-    for i = burn_in+1:length(chain.samples)
-        n += size(chain.samples[i].tracks, 3)
-    end
-    n
-end
-
 function credible1D(S::AbstractVector{<:Sample}, i::Integer, xedges::AbstractRange, yedges::AbstractRange; factor::Real=1, xshift::Real=0, yshift::Real=0)
     N = size(S[1].tracks, 1)
     xcounts = zeros(Float64, N, length(xedges) - 1)
