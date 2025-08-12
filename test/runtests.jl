@@ -37,6 +37,5 @@ println("Running XML-related tests...")
         0.7360280328825375 0.2501445757922171 0.0;
         0.7251632119133569 0.23299726272920693 0.0;
         0.7047287916318168 0.2099248946689253 0.0]
-    @views gttracks[:, 1:2, :] .+= 0.5
-    @test isapprox(xml2tracks("./testtracks.xml", scale=1, nframes=34, batchsize=1), gttracks)
+    @test isapprox(xml2tracks("./testtracks.xml", nframes=34, batchsize=1), gttracks)
 end

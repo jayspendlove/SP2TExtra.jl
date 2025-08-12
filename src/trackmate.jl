@@ -1,11 +1,3 @@
-# function readparticle!(x::AbstractArray{<:Real,2}, particle::XMLDict.XMLDictElement, B::Integer, H::Integer)
-#     for detection in particle["detection"]
-#         trange = tryparse(Int, detection[:t]) * B .+ (1:B)
-#         x[trange, 1] .= tryparse(Float64, detection[:x]) + 0.5
-#         x[trange, 2] .= H - 0.5 - tryparse(Float64, detection[:y])
-#     end
-# end
-
 function parsedetection!(x::AbstractArray{<:Real,2}, particle::XMLDict.XMLDictElement, batchsize::Integer)
     for detection in particle["detection"]
         trange = tryparse(Int, detection[:t]) * batchsize .+ (1:batchsize)
@@ -13,6 +5,7 @@ function parsedetection!(x::AbstractArray{<:Real,2}, particle::XMLDict.XMLDictEl
             x[trange, dim] .= tryparse(Float64, detection[coord])
         end
     end
+    return x
 end
 
 function parseparticle!(x::AbstractArray{<:Real,3}, dict::XMLDict.XMLDictElement, batchsize::Integer)
@@ -23,21 +16,20 @@ function parseparticle!(x::AbstractArray{<:Real,3}, dict::XMLDict.XMLDictElement
     else
         parsedetection!(view(x, :, :, 1), dict["particle"], batchsize)
     end
+    return x
 end
 
-function xml2tracks(xml::String; batchsize::Integer=1, nframes::Integer, scale::Real=1)
+function xml2tracks(xml::String; batchsize::Integer=1, nframes::Integer)
     xmlcontent = parse_xml(String(read(xml)))
     ntracks = tryparse(Int, xmlcontent[:nTracks])
     tracks = fill!(Array{Float64}(undef, nframes, 3, ntracks), NaN)
     parseparticle!(tracks, xmlcontent, batchsize)
-    @views tracks[:, 1:2, :] .+= 0.5
-    tracks .*= scale
 end
 
-function xml2tracks(xmls::AbstractVector{String}; batchsizes::AbstractVector{<:Integer}, nframes::Integer, scale::Real=1)
+function xml2tracks(xmls::AbstractVector{String}; batchsizes::AbstractVector{<:Integer}, nframes::Integer)
     tracks = Vector{Array{Float64,3}}()
     for (xml, batchsize) in zip(xmls, batchsizes)
-        push!(tracks, xml2tracks(xml; batchsize=batchsize, nframes=nframes, scale=scale))
+        push!(tracks, xml2tracks(xml; batchsize=batchsize, nframes=nframes))
     end
     tracks
 end
