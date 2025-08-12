@@ -30,7 +30,7 @@ function xml2tracks(xml::String; batchsize::Integer=1, nframes::Integer, scale::
     ntracks = tryparse(Int, xmlcontent[:nTracks])
     tracks = fill!(Array{Float64}(undef, nframes, 3, ntracks), NaN)
     parseparticle!(tracks, xmlcontent, batchsize)
-    @view tracks[:, 1:2, :] .+= 0.5
+    @views tracks[:, 1:2, :] .+= 0.5
     tracks .*= scale
 end
 
