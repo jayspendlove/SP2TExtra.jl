@@ -25,19 +25,19 @@ function parseparticle!(x::AbstractArray{<:Real,3}, dict::XMLDict.XMLDictElement
     end
 end
 
-function xml2tracks(xml::String; batchsize::Integer=1, nframes::Integer, pxsize::Real=1)
+function xml2tracks(xml::String; batchsize::Integer=1, nframes::Integer, scale::Real=1)
     xmlcontent = parse_xml(String(read(xml)))
     ntracks = tryparse(Int, xmlcontent[:nTracks])
     tracks = fill!(Array{Float64}(undef, nframes, 3, ntracks), NaN)
     parseparticle!(tracks, xmlcontent, batchsize)
     @view tracks[:, 1:2, :] .+= 0.5
-    tracks .*= pxsize
+    tracks .*= scale
 end
 
-function xml2tracks(xmls::AbstractVector{String}; batchsizes::AbstractVector{<:Integer}, nframes::Integer, pxsize::Real=1)
+function xml2tracks(xmls::AbstractVector{String}; batchsizes::AbstractVector{<:Integer}, nframes::Integer, scale::Real=1)
     tracks = Vector{Array{Float64,3}}()
     for (xml, batchsize) in zip(xmls, batchsizes)
-        push!(tracks, xml2tracks(xml; batchsize=batchsize, nframes=nframes, pxsize=pxsize))
+        push!(tracks, xml2tracks(xml; batchsize=batchsize, nframes=nframes, scale=scale))
     end
     tracks
 end
