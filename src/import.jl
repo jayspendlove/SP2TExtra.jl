@@ -91,12 +91,16 @@ function getframes(
     width::Integer,
     height::Integer,
     batchsize::Integer,
+    threshold::Integer=typemax(Int),
 )
     framesize = width * height
     nframes, framesleft = countframes(indices[end], framesize, batchsize)
     framesleft != 0 &&
         @warn "The last batch contains $framesleft frames, fewer than the batchsize provided."
     frames = _getframes(indices, framesize, batchsize, nframes)
+    for i in eachindex(frames)
+        frames[i] .> threshold && (frames[i] = 0)
+    end
     return reshape(frames, width, height, nframes)
 end
 
