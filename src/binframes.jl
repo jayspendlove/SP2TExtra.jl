@@ -41,3 +41,5 @@ function bintracks(tracks1bit::AbstractArray{<:AbstractFloat,3}, batchsize::Inte
     meanbin!(binned, tracks1bit, batchsize)
     return binned
 end
+
+repeattracks(tracks::AbstractArray{<:Real,3}, batchsize::Integer) = repeat(tracks, inner=(batchsize, 1, 1))
