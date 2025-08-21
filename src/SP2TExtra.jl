@@ -1,12 +1,12 @@
 module SP2TExtra
 
-using  SP2T, Combinatorics, StatsBase, TiffImages, MAT, ImageCore
+using SP2T, Combinatorics, StatsBase, TiffImages, MAT, ImageCore
 using XMLDict
 
 export binframes, bintracks
 export readbin, getframes, extractROI, readtiff, writetiff, ImageJTIff
 export getdarkcounts
-export ntracks, credible1D, credible2D
+export credible1D, credible2D, msd
 export xml2tracks
 
 include("histcounts.jl")

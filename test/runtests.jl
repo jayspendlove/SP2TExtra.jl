@@ -1,9 +1,8 @@
 using SP2TExtra
 using Test
 
-println("Running XML-related tests...")
-
-@testset let gttracks = [0.15367499430949305 0.22010250918040386 0.0;
+@testset "XML tests" begin
+    gttracks = [0.15367499430949305 0.22010250918040386 0.0;
         0.3161351020914415 0.27006612153286086 0.0;
         0.2711288587786091 0.27340129071031466 0.0;
         0.2703490014548096 0.2945822935280891 0.0;
@@ -38,4 +37,9 @@ println("Running XML-related tests...")
         0.7251632119133569 0.23299726272920693 0.0;
         0.7047287916318168 0.2099248946689253 0.0]
     @test isapprox(xml2tracks("./testtracks.xml", nframes=34, batchsize=1), gttracks)
+end
+
+@testset "MSD tests" begin
+    x = randn(10, 5, 3)
+    @test isapprox(msd(x), sum(diff(x, dims=1) .^ 2) / (3 * (10 - 1)))
 end

@@ -55,3 +55,5 @@ function credible2D(S::AbstractVector{<:Sample}, xedges::AbstractRange, yedges::
     end
     counts ./= ntracks
 end
+
+msd(tracks::AbstractArray{<:Real,3}) = sum(diff(tracks, dims=1) .^ 2) / (size(tracks, 3) * (size(tracks, 1) - 1))
