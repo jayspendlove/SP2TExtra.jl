@@ -57,3 +57,22 @@ function credible2D(S::AbstractVector{<:Sample}, xedges::AbstractRange, yedges::
 end
 
 msd(tracks::AbstractArray{<:Real,3}) = sum(diff(tracks, dims=1) .^ 2) / (size(tracks, 3) * (size(tracks, 1) - 1))
+
+function tracks(chain::Chain{T}; burn_in::Integer=0) where {T<:Real}
+    N = sum(chain.emittercounts[burn_in+1:end])
+    t = chain.samples[1].tracks
+    x = Array{T}(undef, size(t, 1), size(t, 2), N)
+    i = 1
+    for s in chain.samples[burn_in+1:end]
+        n = size(s.tracks, 3)
+        copyto!(view(x, :, :, i:i+n-1), s.tracks)
+        i += n
+    end
+    return x
+end
+
+#! Only works when one particle is present
+function localization_error(chain::Chain{T}; burn_in::Integer=0) where {T<:Real}
+    x = tracks(chain; burn_in=burn_in)
+    mean(sqrt.(sum(var(x, dims=3), dims=2))) / 2
+end
