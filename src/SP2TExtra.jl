@@ -6,7 +6,7 @@ using XMLDict
 export binframes, bintracks
 export readbin, getframes, extractROI, readtiff, writetiff, ImageJTIff
 export getdarkcounts
-export credible1D, credible2D, msd, tracks, localization_error
+export credible1D, credible2D, msd, msds, tracks, localization_error
 export xml2tracks
 
 include("histcounts.jl")

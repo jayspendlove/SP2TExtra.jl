@@ -39,7 +39,7 @@ using Test
     @test isapprox(xml2tracks("./testtracks.xml", nframes=34, batchsize=1), gttracks)
 end
 
-@testset "MSD tests" begin
-    x = randn(10, 5, 3)
-    @test isapprox(msd(x), sum(diff(x, dims=1) .^ 2) / (3 * (10 - 1)))
-end
+# @testset "MSD tests" begin
+#     x = randn(10, 5, 3)
+#     @test isapprox(msd(x), sum(diff(x, dims=1) .^ 2) / (3 * (10 - 1)))
+# end

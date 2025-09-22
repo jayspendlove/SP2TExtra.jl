@@ -56,7 +56,38 @@ function credible2D(S::AbstractVector{<:Sample}, xedges::AbstractRange, yedges::
     counts ./= ntracks
 end
 
-msd(tracks::AbstractArray{<:Real,3}) = sum(diff(tracks, dims=1) .^ 2) / (size(tracks, 3) * (size(tracks, 1) - 1))
+function _msds!(msds::AbstractVector{T}, tracks::AbstractArray{T,3}) where {T<:Real}
+    copyto!(msds, sum(diff(tracks, dims=1) .^ 2, dims=(1, 2)) ./ (size(tracks, 1) - 1))
+    return msds
+end
+function _msds(tracks::AbstractArray{T,3}) where {T<:Real}
+    msds = similar(tracks, size(tracks, 3))
+    _msds!(msds, tracks)
+    return msds
+end
+function msds(tracks::AbstractArray{T,3}, delay::Integer) where {T<:Real}
+    if delay == 1
+        return _msds(tracks)
+    else
+        m = fill!(similar(tracks, size(tracks, 3)), 0)
+        for start in 1:size(tracks, 1)-delay
+            t = @view tracks[start:delay:end, :, :]
+            m .+= _msds(t)
+        end
+        return m ./ (size(tracks, 1) - delay)
+    end
+end
+function msds(tracks::AbstractArray{T,3}) where {T<:Real}
+    m = similar(tracks, size(tracks, 1) - 1, size(tracks, 3))
+    for delay in 1:size(tracks, 1)-1
+        m[delay, :] = msds(tracks, delay)
+    end
+    return m
+end
+msds(chain::Chain; burn_in::Integer=0) = msds(tracks(chain; burn_in=burn_in))
+
+msd(tracks::AbstractArray{<:Real,3}) = mean(msds(tracks))
+msd(chain::Chain; burn_in::Integer=0) = mean(msds(chain; burn_in=burn_in))
 
 function tracks(chain::Chain{T}; burn_in::Integer=0) where {T<:Real}
     N = sum(chain.emittercounts[burn_in+1:end])
