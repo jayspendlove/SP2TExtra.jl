@@ -441,7 +441,7 @@ function build_tracks(::Type{T}, camera::CameraParams, priors::PriorParams, dete
             CuArray(prior_center),
             CuArray(prior_scale),
         ),
-        max_ntracks = inference.max_n_tracks,
+        max_ntracks = inference.parametric ? size(binned_tracks, 3) : inference.max_n_tracks,
         scaling = sqrt(msd.value),
         logonprob = T(priors.track_logonprob),
     )
