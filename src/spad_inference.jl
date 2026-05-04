@@ -19,6 +19,7 @@ Base.@kwdef struct PriorParams{T<:AbstractFloat}
     brightness_guess::T
     brightness_proposal::NTuple{2,T}
     track_prior_scale::T
+    track_perturbation_size::T
     track_logonprob::T
     tracks_1bit_guess_path::String
 end
@@ -188,6 +189,7 @@ function parse_prior_params(::Type{T}, cfg::AbstractDict, toml_dir::AbstractStri
         brightness_guess = T(get_required(cfg, "brightness_guess")),
         brightness_proposal = as_tuple2(T, get_required(cfg, "brightness_proposal"), "priors.brightness_proposal"),
         track_prior_scale = T(get_required(cfg, "track_prior_scale")),
+        track_perturbation_size = T(get_required(cfg, "track_perturbation_size")),
         track_logonprob = T(get_required(cfg, "track_logonprob")),
         tracks_1bit_guess_path = resolve_path(String(get_required(cfg, "tracks_1bit_guess_path")), toml_dir),
     )
@@ -290,6 +292,7 @@ function validate_spad_inference_spec(spec::SPADInferenceSpec)
     validate_nonnegative(spec.priors.diffusion_coeff_guess, "priors.diffusion_coeff_guess")
     validate_positive(spec.priors.brightness_guess, "priors.brightness_guess")
     validate_positive(spec.priors.track_prior_scale, "priors.track_prior_scale")
+    validate_positive(spec.priors.track_perturbation_size, "priors.track_perturbation_size")
     validate_finite(spec.priors.track_logonprob, "priors.track_logonprob")
     validate_positive(spec.priors.msd_prior[1], "priors.msd_prior[1]")
     validate_positive(spec.priors.msd_prior[2], "priors.msd_prior[2]")
@@ -442,7 +445,8 @@ function build_tracks(::Type{T}, camera::CameraParams, priors::PriorParams, dete
             CuArray(prior_scale),
         ),
         max_ntracks = inference.parametric ? size(binned_tracks, 3) : inference.max_n_tracks,
-        scaling = sqrt(msd.value),
+        # scaling = sqrt(msd.value),
+        scaling = priors.track_perturbation_size,
         logonprob = T(priors.track_logonprob),
     )
 end
@@ -524,7 +528,7 @@ function infer_spad_batch(
     batchsize::Int;
     save_dir::AbstractString,
 )
-    @info "Running inference" batchsize = batchsize float_type = float_type_name(spec.float_type)
+    @info "Running inference" n_iters = spec.inference.n_iters batchsize = batchsize float_type = float_type_name(spec.float_type)
 
     float_type = spec.float_type
     frames = CuArray(binframes(frames_1bit, batchsize))
