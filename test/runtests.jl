@@ -83,6 +83,7 @@ brightness_prior = [1.0, 1.0]
 brightness_guess = 1000.0
 brightness_proposal = [10.0, 1.0]
 track_prior_scale = 10.0
+track_perturbation_size = 0.1
 track_logonprob = -10.0
 tracks_1bit_guess_path = "tracks.jld2"
 
@@ -114,6 +115,15 @@ save_unique = true
         @test saved_cfg["camera"]["pixel_size"] == 0.1
         @test occursin("pixel_size = 0.1", saved_text)
         @test !occursin("0.10000000149011612", saved_text)
+
+        continued_spec = load_spad_inference_spec(all_parameters_path)
+        continued_path = SP2TExtra.save_continued_inference_parameters(tmpdir, continued_spec, 7, false)
+        continued_cfg = TOML.parsefile(continued_path)
+        @test continued_path == all_parameters_path
+        @test continued_cfg["inference"]["n_iters"] == 17
+        @test continued_cfg["inference"]["parametric"] == false
+        @test continued_cfg["frames_path"] == frames_path
+        @test continued_cfg["camera"]["darkcounts"] == darkcounts_path
     end
 end
 

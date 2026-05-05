@@ -7,13 +7,13 @@ using XMLDict
 
 export binframes, bintracks
 export readbin, getframes, extractROI, readtiff, writetiff, ImageJTIff
-export getdarkcounts
+export getdarkcounts, calculate_optimal_iterations
 export credible1D, credible2D, msd, msds, tracks, localization_error, plot_tracks_on_frames
 export xml2tracks
 # All functions for inference and simulation framework
 export DataPaths, InferenceParams, PriorParams, SavingParams, CameraParams, SPADInferenceSpec
 export load_spad_inference_spec, load_camera_params, validate_spad_inference_spec, validate_camera_params
-export prepare_spad_inference_run, load_darkcounts, infer_spad_batch, execute_spad_inference
+export prepare_spad_inference_run, load_darkcounts, infer_spad_batch, execute_spad_inference, continue_spad_inference
 export get_save_dir, save_all_inference_parameters, inference_parameters_config_dict, copy_inference_extra_artifacts
 export float_type_name
 export SimulationParams, SimulationSavingParams, SPADSimulationSpec

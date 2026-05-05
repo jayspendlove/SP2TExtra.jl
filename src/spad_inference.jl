@@ -513,6 +513,37 @@ function save_all_inference_parameters(save_dir::AbstractString, spec::SPADInfer
     return path
 end
 
+function continued_inference_parameters_config_dict(
+    spec::SPADInferenceSpec,
+    n_additional_iters::Integer,
+    parametric::Bool,
+)
+    validate_positive(n_additional_iters, "n_additional_iters")
+
+    cfg = deepcopy(spec.config)
+    set_config_value!(
+        cfg,
+        ("inference", "n_iters"),
+        spec.inference.n_iters + Int(n_additional_iters),
+    )
+    set_config_value!(cfg, ("inference", "parametric"), parametric)
+
+    return toml_ready_value(cfg)
+end
+
+function save_continued_inference_parameters(
+    save_dir::AbstractString,
+    spec::SPADInferenceSpec,
+    n_additional_iters::Integer,
+    parametric::Bool,
+)
+    path = joinpath(save_dir, "all_inference_parameters.toml")
+    open(path, "w") do io
+        TOML.print(io, continued_inference_parameters_config_dict(spec, n_additional_iters, parametric))
+    end
+    return path
+end
+
 function copy_inference_extra_artifacts(save_dir::AbstractString, spec::SPADInferenceSpec)
     for extra_path in inference_extra_artifact_paths(spec)
         cp(extra_path, joinpath(save_dir, basename(extra_path)), force = !spec.saving.save_unique)
@@ -564,6 +595,149 @@ function infer_spad_batch(
     )
 end
 
+const SPAD_CONTINUATION_STATE_KEYS = ("chain", "tracks", "msd", "brightness", "detector", "psf")
+
+function validate_spad_continuation_spec(spec::SPADInferenceSpec)
+    spec.float_type <: AbstractFloat || error("`FloatType` must be an AbstractFloat subtype.")
+    validate_positive(spec.inference.n_iters, "inference.n_iters")
+    validate_positive(spec.inference.size_limit, "inference.size_limit")
+    validate_positive(spec.inference.max_n_tracks, "inference.max_n_tracks")
+    isempty(spec.inference.batchsizes) && error("`inference.batchsizes` must contain at least one batchsize.")
+    all(>(0), spec.inference.batchsizes) || error("All `inference.batchsizes` values must be positive.")
+    return spec
+end
+
+function load_spad_chain_state(chain_path::AbstractString)
+    validate_file_exists(chain_path, "chain")
+
+    return jldopen(chain_path, "r") do file
+        for key in SPAD_CONTINUATION_STATE_KEYS
+            haskey(file, key) || error("Expected JLD2 file `$chain_path` to contain key `$key` for continuation.")
+        end
+
+        (
+            chain = file["chain"],
+            tracks = file["tracks"],
+            msd = file["msd"],
+            brightness = file["brightness"],
+            detector = file["detector"],
+            psf = file["psf"],
+        )
+    end
+end
+
+function save_spad_chain_state(chain_path::AbstractString, state)
+    jldsave(
+        chain_path;
+        chain = state.chain,
+        tracks = state.tracks,
+        msd = state.msd,
+        brightness = state.brightness,
+        detector = state.detector,
+        psf = state.psf,
+    )
+    return chain_path
+end
+
+function ensure_chain_sampled_at!(
+    chain::Chain{T},
+    tracks::Tracks{T},
+    msd::MeanSquaredDisplacement{T},
+    brightness::Brightness{T},
+    detector,
+    psf,
+    iteration::Integer,
+) where {T<:AbstractFloat}
+    last_saved_iteration = chain.samples[end].iteration
+
+    iteration < last_saved_iteration && error(
+        "Cannot continue from `inference.n_iters = $iteration` because the chain already has a saved sample at iteration $last_saved_iteration.",
+    )
+    iteration == last_saved_iteration && return chain
+
+    SP2T.isfull(chain) && SP2T.shrink!(chain)
+
+    llarray = SP2T.LogLikelihoodArray{T}(detector.readouts)
+    SP2T.extend!(
+        chain,
+        tracks,
+        msd,
+        brightness,
+        llarray,
+        detector,
+        psf,
+        iteration,
+        SP2T.temperature(chain, iteration),
+    )
+
+    return chain
+end
+
+function continue_spad_batch(
+    spec::SPADInferenceSpec,
+    batchsize::Int;
+    save_dir::AbstractString,
+    n_additional_iters::Integer,
+    parametric::Bool,
+)
+    chain_path = joinpath(save_dir, "chain_$(batchsize).jld2")
+    state = load_spad_chain_state(chain_path)
+    previous_last_saved_iteration = state.chain.samples[end].iteration
+    previous_total_iters = spec.inference.n_iters
+    updated_total_iters = previous_total_iters + Int(n_additional_iters)
+
+    ensure_chain_sampled_at!(
+        state.chain,
+        state.tracks,
+        state.msd,
+        state.brightness,
+        state.detector,
+        state.psf,
+        previous_total_iters,
+    )
+
+    @info "Continuing inference" n_additional_iters = n_additional_iters batchsize = batchsize parametric = parametric float_type = float_type_name(spec.float_type)
+
+    runMCMC!(
+        chain = state.chain,
+        tracks = state.tracks,
+        msd = state.msd,
+        brightness = state.brightness,
+        detector = state.detector,
+        psf = state.psf,
+        niters = n_additional_iters,
+        parametric = parametric,
+    )
+
+    ensure_chain_sampled_at!(
+        state.chain,
+        state.tracks,
+        state.msd,
+        state.brightness,
+        state.detector,
+        state.psf,
+        updated_total_iters,
+    )
+
+    save_spad_chain_state(chain_path, state)
+
+    return (
+        batchsize = batchsize,
+        chain = state.chain,
+        chain_path = chain_path,
+        tracks = state.tracks,
+        msd = state.msd,
+        brightness = state.brightness,
+        detector = state.detector,
+        psf = state.psf,
+        previous_last_saved_iteration = previous_last_saved_iteration,
+        previous_total_iters = previous_total_iters,
+        updated_total_iters = updated_total_iters,
+        n_additional_iters = Int(n_additional_iters),
+        parametric = parametric,
+    )
+end
+
 function execute_spad_inference(toml_path::AbstractString = "inf_params.toml"; overrides = NamedTuple())
     prepared = prepare_spad_inference_run(toml_path; overrides = overrides)
     spec = prepared.spec
@@ -598,5 +772,65 @@ function execute_spad_inference(toml_path::AbstractString = "inf_params.toml"; o
         results = results,
         all_inference_parameters_path = all_parameters_path,
         effective_config_path = all_parameters_path,
+    )
+end
+
+"""
+    continue_spad_inference(result_dir, n_additional_iters; parametric = nothing)
+
+Continue a saved SPAD inference result directory in place. The function reads
+`all_inference_parameters.toml`, loads each `chain_<batchsize>.jld2` expected
+from `[inference].batchsizes`, runs `n_additional_iters` more iterations, and
+overwrites the chain files. When `parametric` is `nothing`, the saved TOML value
+is reused; otherwise the provided boolean is used and written back to the TOML.
+"""
+function continue_spad_inference(
+    result_dir::AbstractString,
+    n_additional_iters::Integer;
+    parametric::Union{Bool,Nothing} = nothing,
+)
+    save_dir = abspath(result_dir)
+    isdir(save_dir) || error("Expected `result_dir` at `$save_dir`, but the directory does not exist.")
+
+    parameters_path = joinpath(save_dir, "all_inference_parameters.toml")
+    validate_file_exists(parameters_path, "all_inference_parameters.toml")
+
+    spec = validate_spad_continuation_spec(load_spad_inference_spec(parameters_path))
+    validate_positive(n_additional_iters, "n_additional_iters")
+
+    continued_parametric = isnothing(parametric) ? spec.inference.parametric : parametric
+
+    @info "Loaded continuation parameters" result_dir = save_dir n_iters = spec.inference.n_iters n_additional_iters = n_additional_iters parametric = continued_parametric
+
+    results = Vector{Any}(undef, length(spec.inference.batchsizes))
+    for (i, batchsize) in enumerate(spec.inference.batchsizes)
+        results[i] = continue_spad_batch(
+            spec,
+            batchsize;
+            save_dir = save_dir,
+            n_additional_iters = n_additional_iters,
+            parametric = continued_parametric,
+        )
+    end
+
+    all_parameters_path = save_continued_inference_parameters(
+        save_dir,
+        spec,
+        n_additional_iters,
+        continued_parametric,
+    )
+    updated_spec = load_spad_inference_spec(all_parameters_path)
+
+    return (
+        save_dir = save_dir,
+        spec = updated_spec,
+        previous_spec = spec,
+        results = results,
+        all_inference_parameters_path = all_parameters_path,
+        effective_config_path = all_parameters_path,
+        n_additional_iters = Int(n_additional_iters),
+        previous_n_iters = spec.inference.n_iters,
+        n_iters = updated_spec.inference.n_iters,
+        parametric = continued_parametric,
     )
 end

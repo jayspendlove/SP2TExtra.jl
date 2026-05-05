@@ -98,7 +98,7 @@ If `camera.darkcounts` is a file path, that darkcounts file is also copied into 
 
 ## Inference TOML
 
-An inference TOML is used by `execute_spad_inference`.
+An inference TOML is used by `execute_spad_inference`. A saved inference result directory can also be continued with `continue_spad_inference`.
 
 Top-level fields:
 
@@ -135,6 +135,7 @@ Required fields:
 - `brightness_guess`: positive float, photons per second. Typically matches `simulation.brightness_per_sec`.
 - `brightness_proposal`: two-value positive array for the brightness proposal.
 - `track_prior_scale`: positive float. The track position prior scale is `camera.pixel_size * track_prior_scale`.
+- `track_perturbation_size`: positive float, random-walk proposal scale for track position updates.
 - `track_logonprob`: finite float.
 - `tracks_1bit_guess_path`: path to a `.jld2` file containing key `"tracks"` for the initial track guess.
 
@@ -167,8 +168,20 @@ If that directory exists, `_1`, `_2`, etc. are appended. If `save_unique = false
 `execute_spad_inference` saves:
 
 - `all_inference_parameters.toml`: merged original parameters plus overrides, with input paths expanded to absolute paths and the camera table included.
-- `chain_<batchsize>.jld2`: one chain file for each configured batch size.
+- `chain_<batchsize>.jld2`: one chain file for each configured batch size, containing `chain`, `tracks`, `msd`, `brightness`, `detector`, and `psf`.
 - Any files listed in `saving.also_save`, copied from the frames directory.
 
 The original inference TOML, camera TOML, and initial track guess file are not copied automatically; their absolute source paths are recorded in `all_inference_parameters.toml`.
 
+### Continuing Inference
+
+Use `continue_spad_inference` on an existing inference result directory:
+
+```julia
+continue_spad_inference("path/to/results", 20_000)
+continue_spad_inference("path/to/results", 20_000; parametric = true)
+```
+
+The function reads `all_inference_parameters.toml`, reconstructs the expected `chain_<batchsize>.jld2` filenames from `[inference].batchsizes`, runs each saved chain for the requested additional iterations, and overwrites the existing chain files. If `parametric` is not provided, it defaults to the value currently stored in `all_inference_parameters.toml`.
+
+After a successful continuation, `all_inference_parameters.toml` is updated in place: `[inference].n_iters` is increased by the additional iteration count, and `[inference].parametric` records the mode used for the continuation.
