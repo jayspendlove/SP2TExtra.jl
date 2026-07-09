@@ -181,12 +181,28 @@ function parse_inference_params(cfg::AbstractDict)
     )
 end
 
-function parse_prior_params(::Type{T}, cfg::AbstractDict, toml_dir::AbstractString) where {T<:AbstractFloat}
+function parse_prior_params(::Type{T}, cfg::AbstractDict, toml_dir::AbstractString; diffusion_coeff_guess_default::Union{Nothing,T} = nothing, brightness_guess_default::Union{Nothing,T} = nothing) where {T<:AbstractFloat}
+    diffusion_coeff_guess = if haskey(cfg, "diffusion_coeff_guess")
+        T(cfg["diffusion_coeff_guess"])
+    elseif !isnothing(diffusion_coeff_guess_default)
+        T(diffusion_coeff_guess_default)
+    else
+        error("Missing required key: priors.diffusion_coeff_guess")
+    end
+
+    brightness_guess = if haskey(cfg, "brightness_guess")
+        T(cfg["brightness_guess"])
+    elseif !isnothing(brightness_guess_default)
+        T(brightness_guess_default)
+    else
+        error("Missing required key: priors.brightness_guess")
+    end
+
     return PriorParams{T}(
         msd_prior = as_tuple2(T, get_required(cfg, "msd_prior"), "priors.msd_prior"),
-        diffusion_coeff_guess = T(get_required(cfg, "diffusion_coeff_guess")),
+        diffusion_coeff_guess = diffusion_coeff_guess,
         brightness_prior = as_tuple2(T, get_required(cfg, "brightness_prior"), "priors.brightness_prior"),
-        brightness_guess = T(get_required(cfg, "brightness_guess")),
+        brightness_guess = brightness_guess,
         brightness_proposal = as_tuple2(T, get_required(cfg, "brightness_proposal"), "priors.brightness_proposal"),
         track_prior_scale = T(get_required(cfg, "track_prior_scale")),
         track_perturbation_size = T(get_required(cfg, "track_perturbation_size")),
@@ -228,6 +244,10 @@ function load_spad_inference_spec(toml_path::AbstractString; overrides = NamedTu
 
     float_type = parse_float_type(merged_cfg)
 
+    simulation_cfg = get(merged_cfg, "simulation", Dict{String,Any}())
+    diffusion_coeff_guess_default = simulation_cfg isa AbstractDict ? get(simulation_cfg, "diffusion_coefficient", nothing) : nothing
+    brightness_guess_default = simulation_cfg isa AbstractDict ? get(simulation_cfg, "brightness_per_sec", nothing) : nothing
+
     return SPADInferenceSpec{float_type}(
         float_type = float_type,
         toml_path = toml_path,
@@ -235,7 +255,13 @@ function load_spad_inference_spec(toml_path::AbstractString; overrides = NamedTu
         config = deepcopy(merged_cfg),
         data = parse_data_paths(merged_cfg, toml_dir),
         inference = parse_inference_params(get_required(merged_cfg, "inference")),
-        priors = parse_prior_params(float_type, get_required(merged_cfg, "priors"), toml_dir),
+        priors = parse_prior_params(
+            float_type,
+            get_required(merged_cfg, "priors"),
+            toml_dir;
+            diffusion_coeff_guess_default = diffusion_coeff_guess_default,
+            brightness_guess_default = brightness_guess_default,
+        ),
         saving = parse_saving_params(get_required(merged_cfg, "saving"), toml_dir),
     )
 end
@@ -357,6 +383,27 @@ function load_darkcounts(::Type{T}, camera::CameraParams, camera_toml_dir::Abstr
     return T.(load_required_jld2(darkcounts_path, "darkcounts"))
 end
 
+function backend_array(backend::AbstractString, x)
+    backend = lowercase(backend)
+    if backend == "cpu"
+        return Array(x)
+    elseif backend == "gpu"
+        return CuArray(x)
+    else
+        error("Unsupported backend `$backend`. Use `cpu` or `gpu`.")
+    end
+end
+
+function coarse_grained_track_guess(tracks::AbstractArray{<:AbstractFloat,3}, window::Integer)
+    window > 0 || error("`window` must be positive.")
+    size(tracks, 1) >= window || error("`window` must not exceed the number of frames.")
+    binned_guess = bintracks(tracks, window)
+    # re cast binned_guess to same size as original tracks with repeated values
+    repeated_guess = repeat(binned_guess, inner=(window, 1, 1))
+    # truncate to original number of frames
+    return repeated_guess[1:size(tracks, 1), :, :]
+end
+
 function prepare_spad_inference_run(toml_path::AbstractString = "inf_params.toml"; overrides = NamedTuple())
     spec = validate_spad_inference_spec(load_spad_inference_spec(toml_path; overrides = overrides))
     camera = validate_camera_params(load_camera_params(spec), spec.data.camera_params_path)
@@ -399,11 +446,11 @@ function build_psf(::Type{T}, camera::CameraParams, tracks_guess) where {T<:Abst
     error("`tracks` second dimension must be 2 or 3, got $(ndims_tracks).")
 end
 
-function build_detector(::Type{T}, camera::CameraParams, darkcounts, frames, batchsize::Int) where {T<:AbstractFloat}
+function build_detector(::Type{T}, camera::CameraParams, darkcounts, frames, batchsize::Int; backend::AbstractString = "gpu") where {T<:AbstractFloat}
     return SPAD{T}(
         period = T(camera.period),
         pixel_size = T(camera.pixel_size),
-        darkcounts = CuArray(darkcounts),
+        darkcounts = backend_array(backend, darkcounts),
         cutoffs = (T(0), T(Inf)),
         readouts = frames,
         batchsize = batchsize,
@@ -426,8 +473,8 @@ function build_brightness(::Type{T}, camera::CameraParams, priors::PriorParams, 
     )
 end
 
-function build_tracks(::Type{T}, camera::CameraParams, priors::PriorParams, detector, msd, tracks_guess, batchsize::Int, inference::InferenceParams) where {T<:AbstractFloat}
-    binned_tracks = T.(bintracks(tracks_guess, batchsize)) #guess for this batchsize
+function build_tracks(::Type{T}, camera::CameraParams, priors::PriorParams, detector, msd, tracks_guess, batchsize::Int, inference::InferenceParams; backend::AbstractString = "gpu") where {T<:AbstractFloat}
+    binned_tracks = T.(bintracks(tracks_guess, batchsize))
     ndims_tracks = size(binned_tracks, 2)
     prior_center = if ndims_tracks == 2
         T.(collect(detector.framecenter))
@@ -439,13 +486,12 @@ function build_tracks(::Type{T}, camera::CameraParams, priors::PriorParams, dete
     prior_scale = fill(T(camera.pixel_size * priors.track_prior_scale), ndims_tracks)
 
     return Tracks{T}(
-        guess = CuArray(binned_tracks),
+        guess = backend_array(backend, binned_tracks),
         prior = DNormal{T}(
-            CuArray(prior_center),
-            CuArray(prior_scale),
+            backend_array(backend, prior_center),
+            backend_array(backend, prior_scale),
         ),
         max_ntracks = inference.parametric ? size(binned_tracks, 3) : inference.max_n_tracks,
-        # scaling = sqrt(msd.value),
         scaling = priors.track_perturbation_size,
         logonprob = T(priors.track_logonprob),
     )
@@ -558,16 +604,15 @@ function infer_spad_batch(
     darkcounts,
     batchsize::Int;
     save_dir::AbstractString,
+    backend::AbstractString = "gpu",
 )
-    @info "Running inference" n_iters = spec.inference.n_iters batchsize = batchsize float_type = float_type_name(spec.float_type)
-
     float_type = spec.float_type
-    frames = CuArray(binframes(frames_1bit, batchsize))
-    detector = build_detector(float_type, camera, darkcounts, frames, batchsize)
+    frames = backend_array(backend, binframes(frames_1bit, batchsize))
+    detector = build_detector(float_type, camera, darkcounts, frames, batchsize; backend = backend)
     msd = build_msd(float_type, camera, spec.priors, batchsize)
     psf = build_psf(float_type, camera, tracks_1bit)
     brightness = build_brightness(float_type, camera, spec.priors, psf)
-    tracks = build_tracks(float_type, camera, spec.priors, detector, msd, tracks_1bit, batchsize, spec.inference)
+    tracks = build_tracks(float_type, camera, spec.priors, detector, msd, tracks_1bit, batchsize, spec.inference; backend = backend)
 
     chain = runMCMC(
         tracks = tracks,
@@ -738,15 +783,12 @@ function continue_spad_batch(
     )
 end
 
-function execute_spad_inference(toml_path::AbstractString = "inf_params.toml"; overrides = NamedTuple())
+function execute_spad_inference(toml_path::AbstractString = "inf_params.toml"; overrides = NamedTuple(), backend::AbstractString = "gpu")
     prepared = prepare_spad_inference_run(toml_path; overrides = overrides)
     spec = prepared.spec
     camera = prepared.camera
 
-    @info "Loaded validated input data" frames_path = spec.data.frames_path n_input_frames = size(prepared.frames_1bit, 3) float_type = float_type_name(spec.float_type)
-
     save_dir = get_save_dir(spec)
-    println("Saving in $save_dir")
     mkpath(save_dir)
 
     all_parameters_path = save_all_inference_parameters(save_dir, spec)
@@ -762,6 +804,7 @@ function execute_spad_inference(toml_path::AbstractString = "inf_params.toml"; o
             prepared.darkcounts,
             batchsize;
             save_dir = save_dir,
+            backend = backend,
         )
     end
 

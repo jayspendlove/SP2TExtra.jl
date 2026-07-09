@@ -215,9 +215,9 @@ end
 
 function shift_tracks_into_fov!(tracks, simulation::SimulationParams{T}, camera::CameraParams{T}) where {T<:AbstractFloat}
     buffer = T(2) * camera.pixel_size
-    for i in 1:size(tracks, 3)
+    for i in axes(tracks, 3)
         shifted = false
-        for d in 1:size(tracks, 2)
+        for d in axes(tracks, 2)
             minval = minimum(tracks[:, d, i])
             maxval = maximum(tracks[:, d, i])
             upper_bound = camera.detector_size * camera.pixel_size
@@ -250,7 +250,7 @@ function validate_tracks_for_simulation(tracks, simulation::SimulationParams{T},
         error("Track particle count $(size(tracks, 3)) must match `simulation.n_particles` $(simulation.n_particles).")
 
     upper_bound = camera.detector_size * camera.pixel_size
-    for i in 1:size(tracks, 3), d in 1:size(tracks, 2)
+    for i in axes(tracks, 3), d in axes(tracks, 2)
         minval = minimum(tracks[:, d, i])
         maxval = maximum(tracks[:, d, i])
         if minval < zero(T) || maxval > upper_bound

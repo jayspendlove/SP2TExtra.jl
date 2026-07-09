@@ -127,6 +127,67 @@ save_unique = true
     end
 end
 
+@testset "SPAD inference defaults priors from simulation" begin
+    mktempdir() do tmpdir
+        frames_path = joinpath(tmpdir, "frames.jld2")
+        tracks_path = joinpath(tmpdir, "tracks.jld2")
+        darkcounts_path = joinpath(tmpdir, "darkcounts.jld2")
+        camera_path = joinpath(tmpdir, "camera.toml")
+        inference_path = joinpath(tmpdir, "inference.toml")
+
+        jldsave(frames_path; frames = ones(UInt8, 4, 4, 3))
+        jldsave(tracks_path; tracks = zeros(Float64, 3, 2, 1))
+        jldsave(darkcounts_path; darkcounts = fill(0.25, 4, 4))
+
+        write(camera_path, """
+[camera]
+numerical_aperture = 1.49
+refractive_index = 1.52
+wavelength = 0.571
+pixel_size = 0.1
+period = 5e-5
+darkcounts = "darkcounts.jld2"
+detector_size = 4
+""")
+
+        write(inference_path, """
+FloatType = "Float64"
+frames_path = "frames.jld2"
+camera_params_path = "camera.toml"
+
+[simulation]
+diffusion_coefficient = 0.37
+brightness_per_sec = 1234.5
+
+[inference]
+n_iters = 10
+size_limit = 5
+parametric = true
+max_n_tracks = 1
+batchsizes = [1]
+
+[priors]
+msd_prior = [2.0, 1e-5]
+brightness_prior = [1.0, 1.0]
+brightness_proposal = [10.0, 1.0]
+track_prior_scale = 10.0
+track_perturbation_size = 0.1
+track_logonprob = -10.0
+tracks_1bit_guess_path = "tracks.jld2"
+
+[saving]
+chain_output_dir = "results"
+save_name = "tmp"
+also_save = []
+save_unique = true
+""")
+
+        spec = load_spad_inference_spec(inference_path)
+        @test spec.priors.diffusion_coeff_guess == 0.37
+        @test spec.priors.brightness_guess == 1234.5
+    end
+end
+
 @testset "SPAD simulation config tests" begin
     mktempdir() do tmpdir
         darkcounts_path = joinpath(tmpdir, "darkcounts.jld2")

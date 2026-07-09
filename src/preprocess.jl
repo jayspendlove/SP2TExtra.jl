@@ -7,6 +7,7 @@ function getdarkcounts(darkframes::AbstractArray{<:Integer,3}; batchsize::Intege
 end
 
 # function getframes() end
+
 function calculate_optimal_iterations(sizelimit::Int, min_iters::Int)
     if min_iters < sizelimit - 1
         error("min_iters must be at least sizelimit - 1 ($(sizelimit - 1)) to allow at least one fill cycle.")
@@ -25,4 +26,42 @@ function calculate_optimal_iterations(sizelimit::Int, min_iters::Int)
             error("No suitable total iterations found within reasonable k (min_iters too large).")
         end
     end
+end
+
+function final_chain_length(sizelimit::Int, niters::Int)
+    if sizelimit < 1
+        error("sizelimit must be >= 1")
+    end
+    if niters < 0
+        error("niters must be >= 0")
+    end
+
+    chain_len = 1
+    iter = 0
+    prev_diff = 1
+
+    while true
+        stride = chain_len == 1 ? 1 :
+                 prev_diff * (chain_len == sizelimit ? 2 : 1)
+
+        rem = iter % stride
+        next_iter = rem == 0 ? iter + stride : iter + (stride - rem)
+
+        if next_iter > niters
+            break
+        end
+
+        iter = next_iter
+
+        if chain_len == sizelimit
+            chain_len = ceil(Int, chain_len / 2)
+            chain_len += 1
+        else
+            chain_len += 1
+        end
+
+        prev_diff = stride
+    end
+
+    return chain_len
 end

@@ -5,9 +5,9 @@ using JLD2, CUDA, TOML, Dates
 using Random
 using XMLDict
 
-export binframes, bintracks
+export binframes, bintracks, coarse_grained_track_guess
 export readbin, getframes, extractROI, readtiff, writetiff, ImageJTIff
-export getdarkcounts, calculate_optimal_iterations
+export getdarkcounts, calculate_optimal_iterations, final_chain_length
 export credible1D, credible2D, msd, msds, tracks, localization_error, plot_tracks_on_frames
 export xml2tracks
 # All functions for inference and simulation framework
@@ -20,6 +20,7 @@ export SimulationParams, SimulationSavingParams, SPADSimulationSpec
 export load_spad_simulation_spec, validate_spad_simulation_spec, prepare_spad_simulation_run
 export load_simulation_darkcounts, get_simulation_save_dir, save_all_simulation_parameters
 export simulation_parameters_config_dict, copy_simulation_input_artifacts, execute_spad_simulation
+export save_simulation_outputs, load_required_jld2, validate_loaded_inputs, get_unique_datadir
 
 include("histcounts.jl")
 include("binframes.jl")
