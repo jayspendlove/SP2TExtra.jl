@@ -181,11 +181,9 @@ function parse_inference_params(cfg::AbstractDict)
     )
 end
 
-function parse_prior_params(::Type{T}, cfg::AbstractDict, toml_dir::AbstractString; diffusion_coeff_guess_default::Union{Nothing,T} = nothing, brightness_guess_default::Union{Nothing,T} = nothing) where {T<:AbstractFloat}
+function parse_prior_params(::Type{T}, cfg::AbstractDict, toml_dir::AbstractString; brightness_guess_default::Union{Nothing,T} = nothing) where {T<:AbstractFloat}
     diffusion_coeff_guess = if haskey(cfg, "diffusion_coeff_guess")
         T(cfg["diffusion_coeff_guess"])
-    elseif !isnothing(diffusion_coeff_guess_default)
-        T(diffusion_coeff_guess_default)
     else
         error("Missing required key: priors.diffusion_coeff_guess")
     end
@@ -245,7 +243,6 @@ function load_spad_inference_spec(toml_path::AbstractString; overrides = NamedTu
     float_type = parse_float_type(merged_cfg)
 
     simulation_cfg = get(merged_cfg, "simulation", Dict{String,Any}())
-    diffusion_coeff_guess_default = simulation_cfg isa AbstractDict ? get(simulation_cfg, "diffusion_coefficient", nothing) : nothing
     brightness_guess_default = simulation_cfg isa AbstractDict ? get(simulation_cfg, "brightness_per_sec", nothing) : nothing
 
     return SPADInferenceSpec{float_type}(
@@ -259,7 +256,6 @@ function load_spad_inference_spec(toml_path::AbstractString; overrides = NamedTu
             float_type,
             get_required(merged_cfg, "priors"),
             toml_dir;
-            diffusion_coeff_guess_default = diffusion_coeff_guess_default,
             brightness_guess_default = brightness_guess_default,
         ),
         saving = parse_saving_params(get_required(merged_cfg, "saving"), toml_dir),
@@ -315,7 +311,7 @@ function validate_spad_inference_spec(spec::SPADInferenceSpec)
     isempty(spec.inference.batchsizes) && error("`inference.batchsizes` must contain at least one batchsize.")
     all(>(0), spec.inference.batchsizes) || error("All `inference.batchsizes` values must be positive.")
 
-    validate_nonnegative(spec.priors.diffusion_coeff_guess, "priors.diffusion_coeff_guess")
+    validate_positive(spec.priors.diffusion_coeff_guess, "priors.diffusion_coeff_guess")
     validate_positive(spec.priors.brightness_guess, "priors.brightness_guess")
     validate_positive(spec.priors.track_prior_scale, "priors.track_prior_scale")
     validate_positive(spec.priors.track_perturbation_size, "priors.track_perturbation_size")

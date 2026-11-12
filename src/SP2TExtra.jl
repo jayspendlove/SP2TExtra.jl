@@ -2,7 +2,7 @@ module SP2TExtra
 
 using SP2T, Combinatorics, StatsBase, TiffImages, MAT, ImageCore, Statistics
 using JLD2, CUDA, TOML, Dates
-using Random
+using Random, Logging
 using XMLDict
 
 export binframes, bintracks, coarse_grained_track_guess
@@ -21,7 +21,9 @@ export load_spad_simulation_spec, validate_spad_simulation_spec, prepare_spad_si
 export load_simulation_darkcounts, get_simulation_save_dir, save_all_simulation_parameters
 export simulation_parameters_config_dict, copy_simulation_input_artifacts, execute_spad_simulation
 export save_simulation_outputs, load_required_jld2, validate_loaded_inputs, get_unique_datadir
+export PolyDecayAnnealing
 
+include("annealing_schedules.jl")
 include("histcounts.jl")
 include("binframes.jl")
 include("import.jl")
